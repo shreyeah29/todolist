@@ -1,3 +1,12 @@
+import type { LucideIcon } from "lucide-react";
+import {
+  BarChart3,
+  BookOpen,
+  CalendarDays,
+  LayoutDashboard,
+  Settings,
+} from "lucide-react";
+
 export const APP_NAME = "Toso";
 export const APP_DESCRIPTION =
   "Personal productivity operating system for tasks and notes.";
@@ -50,10 +59,55 @@ export const UPLOAD_LIMITS = {
   ],
 } as const;
 
-export const NAV_ITEMS = [
-  { href: "/dashboard", label: "Dashboard", icon: "LayoutDashboard" },
-  { href: "/planner", label: "Planner", icon: "CalendarDays" },
-  { href: "/knowledge", label: "Knowledge Hub", icon: "BookOpen" },
-  { href: "/analytics", label: "Analytics", icon: "BarChart3" },
-  { href: "/settings", label: "Settings", icon: "Settings" },
+export type NavItem = {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  match?: "exact" | "prefix";
+};
+
+export const NAV_ITEMS: NavItem[] = [
+  {
+    href: "/dashboard",
+    label: "Dashboard",
+    icon: LayoutDashboard,
+    match: "exact",
+  },
+  {
+    href: "/planner",
+    label: "Planner",
+    icon: CalendarDays,
+    match: "prefix",
+  },
+  {
+    href: "/knowledge",
+    label: "Knowledge Hub",
+    icon: BookOpen,
+    match: "prefix",
+  },
+  {
+    href: "/analytics",
+    label: "Analytics",
+    icon: BarChart3,
+    match: "exact",
+  },
+  {
+    href: "/settings",
+    label: "Settings",
+    icon: Settings,
+    match: "exact",
+  },
+];
+
+export const PLANNER_SUBNAV = [
+  { href: "/planner", label: "Tasks" },
+  { href: "/planner/calendar", label: "Calendar" },
+  { href: "/planner/board", label: "Board" },
+  { href: "/planner/timeline", label: "Timeline" },
+  { href: "/planner/habits", label: "Habits" },
+  { href: "/planner/goals", label: "Goals" },
+  { href: "/planner/pomodoro", label: "Pomodoro" },
 ] as const;
+
+export const SIDEBAR_WIDTH = 272;
+export const SIDEBAR_COLLAPSED_WIDTH = 76;

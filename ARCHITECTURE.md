@@ -2,7 +2,7 @@
 
 > Personal Productivity Operating System  
 > Modules: **Planner** · **Knowledge Hub**  
-> Status: **Step 2 — Folder structure + scaffold** (awaiting approval before Step 3)
+> Status: **Step 3 — UI design system + app shell** (awaiting approval before Step 4)
 
 ---
 
@@ -716,7 +716,8 @@ Vercel project + Supabase project. Migrations applied via Supabase CLI. Seed def
 | Step | Deliverable | Gate |
 |---|---|---|
 | **1** | Architecture (this document) | Done |
-| **2** | Folder structure + Next.js scaffold + tooling | **← YOU ARE HERE** |
+| **2** | Folder structure + Next.js scaffold + tooling | Done |
+| **3** | UI design system + shell (sidebar, top nav, theme) | **← YOU ARE HERE** |
 | **3** | UI design system + shell (sidebar, top nav, theme) | Wait |
 | **4** | Reusable components | Wait |
 | **5** | Planner module (full backend + UI) | Wait |

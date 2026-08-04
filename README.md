@@ -40,8 +40,8 @@ See [ARCHITECTURE.md](./ARCHITECTURE.md) for system design, schema, and build se
 | Step | Status |
 |---|---|
 | 1. Architecture | Done |
-| 2. Folder structure + scaffold | In progress |
-| 3. UI design system + shell | Pending |
+| 2. Folder structure + scaffold | Done |
+| 3. UI design system + shell | Done |
 | 4. Reusable components | Pending |
 | 5. Planner module | Pending |
 | 6. Knowledge Hub | Pending |

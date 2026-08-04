@@ -1,8 +1,19 @@
+import { PageHeader } from "@/components/layout/page-header";
+import { EmptyState, Surface } from "@/components/layout/surface";
+
 export default function HabitsPage() {
   return (
-    <section className="space-y-2">
-      <h1 className="text-2xl font-semibold tracking-tight">Habits</h1>
-      <p className="text-muted-foreground text-sm">Habit tracker scaffold.</p>
-    </section>
+    <div>
+      <PageHeader
+        title="Habits"
+        description="Track the rituals that compound into better weeks."
+      />
+      <Surface>
+        <EmptyState
+          title="Habit tracker"
+          description="Daily and weekly habit logging arrives with Planner."
+        />
+      </Surface>
+    </div>
   );
 }

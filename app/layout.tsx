@@ -1,13 +1,18 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist_Mono, Outfit, Sora } from "next/font/google";
 
 import { AppProviders } from "@/app/providers";
 import { APP_DESCRIPTION, APP_NAME } from "@/lib/constants";
 
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const outfit = Outfit({
+  variable: "--font-outfit",
+  subsets: ["latin"],
+});
+
+const sora = Sora({
+  variable: "--font-sora",
   subsets: ["latin"],
 });
 
@@ -32,7 +37,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} font-sans min-h-dvh antialiased`}
+        className={`${outfit.variable} ${sora.variable} ${geistMono.variable} font-sans min-h-dvh antialiased`}
       >
         <AppProviders>{children}</AppProviders>
       </body>

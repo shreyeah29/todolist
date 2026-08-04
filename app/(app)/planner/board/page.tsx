@@ -1,10 +1,19 @@
+import { PageHeader } from "@/components/layout/page-header";
+import { EmptyState, Surface } from "@/components/layout/surface";
+
 export default function PlannerBoardPage() {
   return (
-    <section className="space-y-2">
-      <h1 className="text-2xl font-semibold tracking-tight">Kanban</h1>
-      <p className="text-muted-foreground text-sm">
-        Drag-and-drop board view scaffold.
-      </p>
-    </section>
+    <div>
+      <PageHeader
+        title="Kanban"
+        description="Status columns with drag-and-drop prioritization."
+      />
+      <Surface>
+        <EmptyState
+          title="Board view"
+          description="Kanban columns and card interactions land in Step 5."
+        />
+      </Surface>
+    </div>
   );
 }

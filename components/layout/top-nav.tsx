@@ -2,13 +2,15 @@
 
 import { useMemo } from "react";
 import { usePathname } from "next/navigation";
-import { Bell, Menu, Search } from "lucide-react";
+import { Bell, LogOut, Menu, Search } from "lucide-react";
 
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { signOut } from "@/features/auth/actions";
 import { NAV_ITEMS, PLANNER_SUBNAV } from "@/lib/constants";
+import { hasSupabaseEnvClient } from "@/lib/supabase/has-env-client";
 import { cn } from "@/lib/utils";
 import { useUiStore } from "@/stores/ui-store";
 
@@ -113,6 +115,19 @@ export function TopNav() {
         <Button variant="ghost" size="icon-sm" aria-label="Notifications">
           <Bell className="size-4" />
         </Button>
+
+        {hasSupabaseEnvClient() ? (
+          <form action={signOut}>
+            <Button
+              type="submit"
+              variant="ghost"
+              size="icon-sm"
+              aria-label="Sign out"
+            >
+              <LogOut className="size-4" />
+            </Button>
+          </form>
+        ) : null}
 
         <Avatar className="ml-1 size-8 border">
           <AvatarFallback className="bg-brand-soft text-foreground text-xs font-semibold">

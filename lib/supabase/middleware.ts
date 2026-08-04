@@ -1,7 +1,11 @@
+/**
+ * Shared session helper for Node/server runtimes.
+ * Edge middleware logic lives inline in `/middleware.ts` for Vercel compatibility.
+ */
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-import { hasSupabaseEnv } from "@/lib/supabase/env";
+import { hasSupabaseEnv } from "../supabase/env";
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
@@ -31,29 +35,6 @@ export async function updateSession(request: NextRequest) {
     },
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const pathname = request.nextUrl.pathname;
-  const isAuthRoute =
-    pathname.startsWith("/login") ||
-    pathname.startsWith("/signup") ||
-    pathname.startsWith("/callback");
-  const isPublicApi = pathname.startsWith("/api/health");
-
-  if (!user && !isAuthRoute && !isPublicApi && pathname !== "/") {
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    url.searchParams.set("next", pathname);
-    return NextResponse.redirect(url);
-  }
-
-  if (user && (pathname === "/login" || pathname === "/signup")) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/dashboard";
-    return NextResponse.redirect(url);
-  }
-
+  await supabase.auth.getUser();
   return supabaseResponse;
 }

@@ -1,7 +1,4 @@
-import Link from "next/link";
-
-import { buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { AuthForm } from "@/features/auth/auth-form";
 
 export default function SignupPage() {
   return (
@@ -14,18 +11,7 @@ export default function SignupPage() {
           One account for Planner and Knowledge Hub.
         </p>
       </div>
-      <Link
-        href="/dashboard"
-        className={cn(buttonVariants({ size: "lg" }), "w-full")}
-      >
-        Continue
-      </Link>
-      <p className="text-muted-foreground text-center text-xs">
-        Already have an account?{" "}
-        <Link href="/login" className="text-foreground underline-offset-4 hover:underline">
-          Sign in
-        </Link>
-      </p>
+      <AuthForm mode="signup" />
     </section>
   );
 }

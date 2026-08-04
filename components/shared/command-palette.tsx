@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { FilePlus2, ListPlus } from "lucide-react";
+import { FilePlus2, ListPlus, Search } from "lucide-react";
 
 import {
   Command,
@@ -15,7 +15,10 @@ import {
   CommandSeparator,
   CommandShortcut,
 } from "@/components/ui/command";
+import { globalSearch } from "@/features/search/actions";
 import { NAV_ITEMS } from "@/lib/constants";
+import { hasSupabaseEnvClient } from "@/lib/supabase/has-env-client";
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { useUiStore } from "@/stores/ui-store";
 
 export function CommandPalette() {
@@ -23,14 +26,51 @@ export function CommandPalette() {
   const open = useUiStore((s) => s.commandPaletteOpen);
   const setOpen = useUiStore((s) => s.setCommandPaletteOpen);
   const [query, setQuery] = useState("");
+  const debounced = useDebouncedValue(query, 200);
+  const [hits, setHits] = useState<
+    Array<{
+      entity_type: string;
+      entity_id: string;
+      title: string;
+      subtitle: string | null;
+    }>
+  >([]);
 
   useEffect(() => {
-    if (!open) setQuery("");
+    if (!open) {
+      setQuery("");
+      setHits([]);
+    }
   }, [open]);
+
+  useEffect(() => {
+    let active = true;
+    async function run() {
+      if (!hasSupabaseEnvClient() || debounced.trim().length < 2) {
+        if (active) setHits([]);
+        return;
+      }
+      const result = await globalSearch(debounced.trim());
+      if (!active) return;
+      if (result.success) setHits(result.data);
+      else setHits([]);
+    }
+    void run();
+    return () => {
+      active = false;
+    };
+  }, [debounced]);
 
   const run = (href: string) => {
     setOpen(false);
     router.push(href);
+  };
+
+  const openHit = (type: string, id: string) => {
+    if (type === "task") run("/planner");
+    else if (type === "note") run(`/knowledge/${id}`);
+    else if (type === "folder") run("/knowledge");
+    else run("/dashboard");
   };
 
   return (
@@ -41,14 +81,34 @@ export function CommandPalette() {
       description="Search navigation and quick actions"
       className="glass border-border/60 overflow-hidden sm:max-w-lg"
     >
-      <Command className="bg-transparent">
+      <Command className="bg-transparent" shouldFilter={hits.length === 0}>
         <CommandInput
-          placeholder="Search pages, actions..."
+          placeholder="Search everything…"
           value={query}
           onValueChange={setQuery}
         />
         <CommandList>
           <CommandEmpty>No results found.</CommandEmpty>
+          {hits.length > 0 ? (
+            <CommandGroup heading="Results">
+              {hits.map((hit) => (
+                <CommandItem
+                  key={`${hit.entity_type}-${hit.entity_id}`}
+                  value={`${hit.title} ${hit.entity_type}`}
+                  onSelect={() => openHit(hit.entity_type, hit.entity_id)}
+                >
+                  <Search className="size-4" />
+                  <div className="min-w-0">
+                    <p className="truncate">{hit.title}</p>
+                    <p className="text-muted-foreground truncate text-xs">
+                      {hit.entity_type}
+                      {hit.subtitle ? ` · ${hit.subtitle}` : ""}
+                    </p>
+                  </div>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          ) : null}
           <CommandGroup heading="Navigation">
             {NAV_ITEMS.map((item) => (
               <CommandItem

@@ -33,7 +33,8 @@ Configure Supabase keys in `.env.local` before enabling auth-protected flows.
 
 ## Architecture
 
-See [ARCHITECTURE.md](./ARCHITECTURE.md) for system design, schema, and build sequence.
+See [ARCHITECTURE.md](./ARCHITECTURE.md) for system design.
+See [DEPLOY.md](./DEPLOY.md) for Vercel + Supabase setup.
 
 ## Build status
 
@@ -42,9 +43,6 @@ See [ARCHITECTURE.md](./ARCHITECTURE.md) for system design, schema, and build se
 | 1. Architecture | Done |
 | 2. Folder structure + scaffold | Done |
 | 3. UI design system + shell | Done |
-| 4. Reusable components | Pending |
-| 5. Planner module | Pending |
-| 6. Knowledge Hub | Pending |
-| 7. Supabase hardening | Pending |
-| 8. Animations | Pending |
-| 9. Performance | Pending |
+| 4–7. Components, Planner, Knowledge, Supabase | In progress (core live) |
+| 8. Animations | Partial |
+| 9. Performance | Partial |

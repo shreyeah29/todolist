@@ -1,7 +1,4 @@
-import Link from "next/link";
-
-import { buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { AuthForm } from "@/features/auth/auth-form";
 
 export default function LoginPage() {
   return (
@@ -11,21 +8,10 @@ export default function LoginPage() {
           Welcome back
         </h1>
         <p className="text-muted-foreground text-sm leading-relaxed">
-          Sign in to continue to your productivity OS. Auth connects in Step 7.
+          Sign in to continue to your productivity OS.
         </p>
       </div>
-      <Link
-        href="/dashboard"
-        className={cn(buttonVariants({ size: "lg" }), "w-full")}
-      >
-        Enter Toso
-      </Link>
-      <p className="text-muted-foreground text-center text-xs">
-        No account yet?{" "}
-        <Link href="/signup" className="text-foreground underline-offset-4 hover:underline">
-          Create one
-        </Link>
-      </p>
+      <AuthForm mode="login" />
     </section>
   );
 }

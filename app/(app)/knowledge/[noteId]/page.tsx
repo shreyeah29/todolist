@@ -1,5 +1,5 @@
 import { PageHeader } from "@/components/layout/page-header";
-import { EmptyState, Surface } from "@/components/layout/surface";
+import { KnowledgeWorkspace } from "@/features/knowledge/notes/knowledge-workspace";
 
 type NotePageProps = {
   params: Promise<{ noteId: string }>;
@@ -11,15 +11,10 @@ export default async function NotePage({ params }: NotePageProps) {
   return (
     <div>
       <PageHeader
-        title="Note"
-        description={`Editing surface for note ${noteId}.`}
+        title="Knowledge Hub"
+        description="Editing with autosave and live folder navigation."
       />
-      <Surface>
-        <EmptyState
-          title="Rich text editor"
-          description="TipTap with slash commands, version history, and autosave will mount here."
-        />
-      </Surface>
+      <KnowledgeWorkspace noteId={noteId === "new" ? undefined : noteId} />
     </div>
   );
 }

@@ -1,0 +1,3 @@
+-- Toso database migrations live in this directory.
+-- Apply with the Supabase CLI once the project is linked (Step 7).
+-- Example: supabase db push

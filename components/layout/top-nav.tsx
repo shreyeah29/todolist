@@ -1,16 +1,16 @@
 "use client";
 
-import { useMemo } from "react";
-import { usePathname } from "next/navigation";
-import { Bell, LogOut, Menu, Search } from "lucide-react";
+import { useMemo, useTransition } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { Bell, Menu, RotateCcw, Search } from "lucide-react";
+import { toast } from "sonner";
 
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { signOut } from "@/features/auth/actions";
+import { resetLocalWorkspace } from "@/features/auth/actions";
 import { NAV_ITEMS, PLANNER_SUBNAV } from "@/lib/constants";
-import { hasSupabaseEnvClient } from "@/lib/supabase/has-env-client";
 import { cn } from "@/lib/utils";
 import { useUiStore } from "@/stores/ui-store";
 
@@ -46,9 +46,11 @@ function useBreadcrumbs(pathname: string) {
 
 export function TopNav() {
   const pathname = usePathname();
+  const router = useRouter();
   const crumbs = useBreadcrumbs(pathname);
   const setSidebarMobileOpen = useUiStore((s) => s.setSidebarMobileOpen);
   const setCommandPaletteOpen = useUiStore((s) => s.setCommandPaletteOpen);
+  const [pending, startTransition] = useTransition();
 
   return (
     <header className="glass-subtle border-border/60 sticky top-0 z-20 flex h-16 items-center gap-3 border-b px-4 backdrop-blur-xl md:px-6">
@@ -116,18 +118,31 @@ export function TopNav() {
           <Bell className="size-4" />
         </Button>
 
-        {hasSupabaseEnvClient() ? (
-          <form action={signOut}>
-            <Button
-              type="submit"
-              variant="ghost"
-              size="icon-sm"
-              aria-label="Sign out"
-            >
-              <LogOut className="size-4" />
-            </Button>
-          </form>
-        ) : null}
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          disabled={pending}
+          aria-label="Reset local data"
+          onClick={() =>
+            startTransition(async () => {
+              const confirmed = window.confirm(
+                "Reset all local Toso data in this browser?",
+              );
+              if (!confirmed) return;
+              const result = await resetLocalWorkspace();
+              if (!result.success) {
+                toast.error(result.error.message);
+                return;
+              }
+              toast.success("Local workspace reset");
+              router.push("/dashboard");
+              router.refresh();
+              window.location.reload();
+            })
+          }
+        >
+          <RotateCcw className="size-4" />
+        </Button>
 
         <Avatar className="ml-1 size-8 border">
           <AvatarFallback className="bg-brand-soft text-foreground text-xs font-semibold">

@@ -6,16 +6,14 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { PageHeader } from "@/components/layout/page-header";
-import { EmptyState, Surface } from "@/components/layout/surface";
+import { Surface } from "@/components/layout/surface";
 import { buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { fetchNotes } from "@/features/knowledge/notes/actions";
 import { fetchTasks } from "@/features/planner/tasks/actions";
-import { hasSupabaseEnvClient } from "@/lib/supabase/has-env-client";
 import { cn } from "@/lib/utils";
 
 export default function DashboardPage() {
-  const configured = hasSupabaseEnvClient();
   const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
@@ -25,7 +23,6 @@ export default function DashboardPage() {
 
   const tasksQuery = useQuery({
     queryKey: ["tasks", "dashboard"],
-    enabled: configured,
     queryFn: async () => {
       const result = await fetchTasks({ limit: 8 });
       if (!result.success) throw new Error(result.error.message);
@@ -35,7 +32,6 @@ export default function DashboardPage() {
 
   const notesQuery = useQuery({
     queryKey: ["notes", "dashboard"],
-    enabled: configured,
     queryFn: async () => {
       const result = await fetchNotes({ limit: 5 });
       if (!result.success) throw new Error(result.error.message);
@@ -86,12 +82,7 @@ export default function DashboardPage() {
               View all
             </Link>
           </div>
-          {!configured ? (
-            <EmptyState
-              title="Connect Supabase"
-              description="Add env vars on Vercel, apply the SQL migration, create an account, then your live dashboard appears here."
-            />
-          ) : tasksQuery.isLoading ? (
+          {tasksQuery.isLoading ? (
             <div className="space-y-2">
               <Skeleton className="h-8 w-full" />
               <Skeleton className="h-8 w-full" />
@@ -105,7 +96,8 @@ export default function DashboardPage() {
                 >
                   <span
                     className={cn(
-                      task.status === "done" && "text-muted-foreground line-through",
+                      task.status === "done" &&
+                        "text-muted-foreground line-through",
                     )}
                   >
                     {task.title}
@@ -131,7 +123,7 @@ export default function DashboardPage() {
               Open hub
             </Link>
           </div>
-          {configured && notesQuery.isLoading ? (
+          {notesQuery.isLoading ? (
             <Skeleton className="h-16 w-full" />
           ) : (
             <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">

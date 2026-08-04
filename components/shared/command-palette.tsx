@@ -17,7 +17,6 @@ import {
 } from "@/components/ui/command";
 import { globalSearch } from "@/features/search/actions";
 import { NAV_ITEMS } from "@/lib/constants";
-import { hasSupabaseEnvClient } from "@/lib/supabase/has-env-client";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { useUiStore } from "@/stores/ui-store";
 
@@ -46,7 +45,7 @@ export function CommandPalette() {
   useEffect(() => {
     let active = true;
     async function run() {
-      if (!hasSupabaseEnvClient() || debounced.trim().length < 2) {
+      if (debounced.trim().length < 2) {
         if (active) setHits([]);
         return;
       }

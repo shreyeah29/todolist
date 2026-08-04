@@ -33,7 +33,6 @@ import {
   undoDeleteTask,
   updateTask,
 } from "@/features/planner/tasks/actions";
-import { hasSupabaseEnvClient } from "@/lib/supabase/has-env-client";
 import { cn } from "@/lib/utils";
 import type { TaskPriority } from "@/types";
 import type { Task } from "@/types/database";
@@ -48,7 +47,6 @@ const priorities: TaskPriority[] = [
 
 export function PlannerTaskBoard() {
   const queryClient = useQueryClient();
-  const configured = hasSupabaseEnvClient();
   const [title, setTitle] = useState("");
   const [priority, setPriority] = useState<TaskPriority>("medium");
   const [search, setSearch] = useState("");
@@ -56,7 +54,6 @@ export function PlannerTaskBoard() {
 
   const tasksQuery = useQuery({
     queryKey: ["tasks", search],
-    enabled: configured,
     queryFn: async () => {
       const result = await fetchTasks({ search });
       if (!result.success) throw new Error(result.error.message);
@@ -95,19 +92,6 @@ export function PlannerTaskBoard() {
 
     return { today, upcoming, backlog };
   }, [tasksQuery.data]);
-
-  if (!configured) {
-    return (
-      <div className="text-muted-foreground space-y-2 text-sm">
-        <p>Connect Supabase to enable live tasks.</p>
-        <p>
-          Add <code>NEXT_PUBLIC_SUPABASE_URL</code> and{" "}
-          <code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code> in Vercel env, run the SQL
-          migration, then redeploy.
-        </p>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">

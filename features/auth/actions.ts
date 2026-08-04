@@ -1,88 +1,60 @@
-"use server";
-
-import { redirect } from "next/navigation";
+import { db, ensureLocalWorkspace, now } from "@/lib/db/local";
+import { fail, ok } from "@/lib/utils/action";
+import type { ActionResult } from "@/types";
+import type { Profile } from "@/types/database";
 import { z } from "zod";
 
-import { fail, ok, withActionResult } from "@/lib/utils/action";
-import { createClient } from "@/lib/supabase/server";
-import { hasSupabaseEnv } from "@/lib/supabase/env";
-import type { ActionResult } from "@/types";
-
-const credentialsSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(8).max(72),
-  displayName: z.string().trim().min(1).max(80).optional(),
+const profileSchema = z.object({
+  displayName: z.string().trim().min(1).max(80),
+  email: z.string().email().optional(),
 });
 
-export async function signInWithPassword(input: {
-  email: string;
-  password: string;
-}): Promise<ActionResult<{ redirectTo: string }>> {
-  if (!hasSupabaseEnv()) {
-    return fail(
-      new Error(
-        "Supabase is not configured. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.",
-      ),
-    );
+export async function bootstrapLocalSession(): Promise<
+  ActionResult<Profile>
+> {
+  try {
+    return ok(await ensureLocalWorkspace());
+  } catch (error) {
+    return fail(error);
   }
-
-  return withActionResult(async () => {
-    const parsed = credentialsSchema
-      .pick({ email: true, password: true })
-      .parse(input);
-    const supabase = await createClient();
-    const { error } = await supabase.auth.signInWithPassword(parsed);
-    if (error) throw error;
-    return { redirectTo: "/dashboard" };
-  });
 }
 
-export async function signUpWithPassword(input: {
-  email: string;
-  password: string;
-  displayName?: string;
-}): Promise<ActionResult<{ redirectTo: string }>> {
-  if (!hasSupabaseEnv()) {
-    return fail(
-      new Error(
-        "Supabase is not configured. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.",
-      ),
-    );
+export async function updateLocalProfile(input: {
+  displayName: string;
+  email?: string;
+}): Promise<ActionResult<Profile>> {
+  try {
+    const parsed = profileSchema.parse(input);
+    const profile = await ensureLocalWorkspace();
+    const next: Profile = {
+      ...profile,
+      display_name: parsed.displayName,
+      email: parsed.email ?? profile.email,
+      updated_at: now(),
+    };
+    await db.profiles.put(next);
+    return ok(next);
+  } catch (error) {
+    return fail(error);
   }
-
-  return withActionResult(async () => {
-    const parsed = credentialsSchema.parse(input);
-    const supabase = await createClient();
-    const origin = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-    const { error } = await supabase.auth.signUp({
-      email: parsed.email,
-      password: parsed.password,
-      options: {
-        emailRedirectTo: `${origin}/callback`,
-        data: {
-          display_name: parsed.displayName ?? parsed.email.split("@")[0],
-        },
-      },
-    });
-    if (error) throw error;
-    return { redirectTo: "/dashboard" };
-  });
 }
 
-export async function signOut(): Promise<void> {
-  if (!hasSupabaseEnv()) {
-    redirect("/login");
+export async function getLocalProfile(): Promise<ActionResult<Profile>> {
+  try {
+    return ok(await ensureLocalWorkspace());
+  } catch (error) {
+    return fail(error);
   }
-  const supabase = await createClient();
-  await supabase.auth.signOut();
-  redirect("/login");
 }
 
-export async function getSessionUser() {
-  if (!hasSupabaseEnv()) return null;
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  return user;
+export async function resetLocalWorkspace(): Promise<ActionResult<true>> {
+  try {
+    await db.delete();
+    localStorage.removeItem("toso-local-user-id");
+    await db.open();
+    await ensureLocalWorkspace();
+    return ok(true);
+  } catch (error) {
+    return fail(error);
+  }
 }

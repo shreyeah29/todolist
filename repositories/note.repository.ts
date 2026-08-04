@@ -1,138 +1,102 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
-
+import {
+  createNoteRecord,
+  db,
+  getLocalUserId,
+  logLocalActivity,
+  now,
+} from "@/lib/db/local";
 import { NotFoundError } from "@/lib/errors";
-import type { Folder, Note } from "@/types/database";
-
-const EMPTY_DOC = {
-  type: "doc",
-  content: [{ type: "paragraph" }],
-};
-
-export async function listFolders(supabase: SupabaseClient, userId: string) {
-  const { data, error } = await supabase
-    .from("folders")
-    .select("*")
-    .eq("created_by", userId)
-    .is("deleted_at", null)
-    .eq("is_archived", false)
-    .order("position", { ascending: true });
-
-  if (error) throw error;
-  return (data ?? []) as Folder[];
-}
-
-export async function listNotes(
-  supabase: SupabaseClient,
-  userId: string,
-  opts: { folderId?: string | null; search?: string; limit?: number } = {},
-) {
-  let query = supabase
-    .from("notes")
-    .select("*")
-    .eq("created_by", userId)
-    .is("deleted_at", null)
-    .eq("is_archived", false)
-    .order("is_pinned", { ascending: false })
-    .order("updated_at", { ascending: false })
-    .limit(opts.limit ?? 100);
-
-  if (opts.folderId) {
-    query = query.eq("folder_id", opts.folderId);
-  }
-  if (opts.search?.trim()) {
-    query = query.or(
-      `title.ilike.%${opts.search.trim()}%,content_text.ilike.%${opts.search.trim()}%`,
-    );
-  }
-
-  const { data, error } = await query;
-  if (error) throw error;
-  return (data ?? []) as Note[];
-}
-
-export async function getNote(
-  supabase: SupabaseClient,
-  userId: string,
-  id: string,
-) {
-  const { data, error } = await supabase
-    .from("notes")
-    .select("*")
-    .eq("id", id)
-    .eq("created_by", userId)
-    .is("deleted_at", null)
-    .maybeSingle();
-
-  if (error) throw error;
-  if (!data) throw new NotFoundError("Note not found");
-  return data as Note;
-}
-
-export async function insertNote(
-  supabase: SupabaseClient,
-  userId: string,
-  payload: { title?: string; folder_id?: string | null },
-) {
-  const { data, error } = await supabase
-    .from("notes")
-    .insert({
-      title: payload.title?.trim() || "Untitled",
-      folder_id: payload.folder_id ?? null,
-      content: EMPTY_DOC,
-      content_text: "",
-      created_by: userId,
-      last_edited_at: new Date().toISOString(),
-    })
-    .select("*")
-    .single();
-
-  if (error) throw error;
-  return data as Note;
-}
-
-export async function updateNoteRow(
-  supabase: SupabaseClient,
-  userId: string,
-  id: string,
-  payload: Partial<Note>,
-) {
-  const { data, error } = await supabase
-    .from("notes")
-    .update({
-      ...payload,
-      last_edited_at: new Date().toISOString(),
-    })
-    .eq("id", id)
-    .eq("created_by", userId)
-    .is("deleted_at", null)
-    .select("*")
-    .single();
-
-  if (error) throw error;
-  return data as Note;
-}
-
-export async function softDeleteNote(
-  supabase: SupabaseClient,
-  userId: string,
-  id: string,
-) {
-  const { data, error } = await supabase
-    .from("notes")
-    .update({ deleted_at: new Date().toISOString() })
-    .eq("id", id)
-    .eq("created_by", userId)
-    .select("*")
-    .single();
-
-  if (error) throw error;
-  return data as Note;
-}
+import type { Note } from "@/types/database";
 
 export function deriveTextStats(text: string) {
   const cleaned = text.replace(/\s+/g, " ").trim();
   const words = cleaned ? cleaned.split(" ").length : 0;
   const characters = cleaned.length;
-  const reading_time_min = Math.max(1, Math.ceil(words / 200));
-  return { word_count: words, character_count: characters, reading_time_min };
+  const reading_time_min = Math.max(1, Math.ceil(words / 200) || 0);
+  return {
+    word_count: words,
+    character_count: characters,
+    reading_time_min: words === 0 ? 0 : reading_time_min,
+  };
+}
+
+export async function listFolders() {
+  const userId = await getLocalUserId();
+  const rows = await db.folders
+    .where("created_by")
+    .equals(userId)
+    .filter((folder) => folder.deleted_at === null && !folder.is_archived)
+    .toArray();
+  return rows.sort((a, b) => a.position - b.position);
+}
+
+export async function listNotes(
+  opts: { folderId?: string | null; search?: string; limit?: number } = {},
+) {
+  const userId = await getLocalUserId();
+  let rows = await db.notes
+    .where("created_by")
+    .equals(userId)
+    .filter((note) => note.deleted_at === null && !note.is_archived)
+    .toArray();
+
+  if (opts.folderId) {
+    rows = rows.filter((note) => note.folder_id === opts.folderId);
+  }
+  if (opts.search?.trim()) {
+    const q = opts.search.trim().toLowerCase();
+    rows = rows.filter(
+      (note) =>
+        note.title.toLowerCase().includes(q) ||
+        note.content_text.toLowerCase().includes(q),
+    );
+  }
+
+  rows.sort((a, b) => {
+    if (a.is_pinned !== b.is_pinned) return a.is_pinned ? -1 : 1;
+    return b.updated_at.localeCompare(a.updated_at);
+  });
+
+  return rows.slice(0, opts.limit ?? 100);
+}
+
+export async function getNote(id: string) {
+  const userId = await getLocalUserId();
+  const note = await db.notes.get(id);
+  if (!note || note.created_by !== userId || note.deleted_at) {
+    throw new NotFoundError("Note not found");
+  }
+  return note;
+}
+
+export async function insertNote(payload: {
+  title?: string;
+  folder_id?: string | null;
+}) {
+  const userId = await getLocalUserId();
+  const note = createNoteRecord(userId, payload);
+  await db.notes.add(note);
+  await logLocalActivity(userId, "note.created", "note", note.id);
+  return note;
+}
+
+export async function updateNoteRow(id: string, payload: Partial<Note>) {
+  const userId = await getLocalUserId();
+  const current = await getNote(id);
+  const next: Note = {
+    ...current,
+    ...payload,
+    id: current.id,
+    created_by: current.created_by,
+    created_at: current.created_at,
+    updated_at: now(),
+    last_edited_at: now(),
+  };
+  await db.notes.put(next);
+  await logLocalActivity(userId, "note.updated", "note", id);
+  return next;
+}
+
+export async function softDeleteNote(id: string) {
+  return updateNoteRow(id, { deleted_at: now() });
 }

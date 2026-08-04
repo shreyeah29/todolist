@@ -5,10 +5,10 @@ export default function SignupPage() {
     <section className="space-y-6">
       <div className="space-y-2 text-center">
         <h1 className="font-heading text-2xl font-semibold tracking-tight">
-          Create your space
+          Set up your local space
         </h1>
         <p className="text-muted-foreground text-sm leading-relaxed">
-          One account for Planner and Knowledge Hub.
+          No cloud account needed. Everything is stored on-device.
         </p>
       </div>
       <AuthForm mode="signup" />

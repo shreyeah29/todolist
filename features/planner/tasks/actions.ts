@@ -1,19 +1,10 @@
-"use server";
-
 import { ConflictError, ValidationError } from "@/lib/errors";
-import { createClient } from "@/lib/supabase/server";
-import { hasSupabaseEnv } from "@/lib/supabase/env";
 import { fail, ok } from "@/lib/utils/action";
-import {
-  createTaskSchema,
-  updateTaskSchema,
-} from "@/lib/validators";
+import { createTaskSchema, updateTaskSchema } from "@/lib/validators";
 import {
   getTask,
   insertTask,
   listTasks,
-  logActivity,
-  requireAuthUser,
   restoreTask,
   softDeleteTask,
   updateTaskRow,
@@ -22,17 +13,9 @@ import {
 import type { ActionResult } from "@/types";
 import type { Task } from "@/types/database";
 
-function ensureConfigured() {
-  if (!hasSupabaseEnv()) {
-    throw new Error(
-      "Supabase is not configured. Add env vars in Vercel and locally.",
-    );
-  }
-}
-
 function intervalsOverlap(
-  aStart: string | null,
-  aEnd: string | null,
+  aStart: string | null | undefined,
+  aEnd: string | null | undefined,
   bStart: string | null,
   bEnd: string | null,
 ) {
@@ -48,61 +31,41 @@ export async function fetchTasks(
   filters: TaskFilters = {},
 ): Promise<ActionResult<Task[]>> {
   try {
-    ensureConfigured();
-    const supabase = await createClient();
-    const user = await requireAuthUser(supabase);
-    const tasks = await listTasks(supabase, user.id, filters);
-    return ok(tasks);
+    return ok(await listTasks(filters));
   } catch (error) {
     return fail(error);
   }
 }
 
-export async function createTask(
-  input: unknown,
-): Promise<ActionResult<Task>> {
+export async function createTask(input: unknown): Promise<ActionResult<Task>> {
   try {
-    ensureConfigured();
     const parsed = createTaskSchema.parse(input);
-    const supabase = await createClient();
-    const user = await requireAuthUser(supabase);
 
     if (parsed.start_time && parsed.end_time) {
-      const existing = await listTasks(supabase, user.id, {
-        status: ["todo", "in_progress"],
-      });
+      const existing = await listTasks({ status: ["todo", "in_progress"] });
       const conflict = existing.find((task) =>
         intervalsOverlap(
-          parsed.start_time ?? null,
-          parsed.end_time ?? null,
+          parsed.start_time,
+          parsed.end_time,
           task.start_time,
           task.end_time,
         ),
       );
       if (conflict) {
-        throw new ConflictError(
-          `Scheduling conflict with “${conflict.title}”`,
-        );
+        throw new ConflictError(`Scheduling conflict with “${conflict.title}”`);
       }
     }
 
-    const task = await insertTask(supabase, user.id, parsed);
-    await logActivity(supabase, user.id, "task.created", "task", task.id);
-    return ok(task);
+    return ok(await insertTask(parsed));
   } catch (error) {
     return fail(error);
   }
 }
 
-export async function updateTask(
-  input: unknown,
-): Promise<ActionResult<Task>> {
+export async function updateTask(input: unknown): Promise<ActionResult<Task>> {
   try {
-    ensureConfigured();
     const parsed = updateTaskSchema.parse(input);
     const { id, ...rest } = parsed;
-    const supabase = await createClient();
-    const user = await requireAuthUser(supabase);
 
     if (rest.status === "done" && !rest.completed_at) {
       rest.completed_at = new Date().toISOString();
@@ -111,9 +74,7 @@ export async function updateTask(
       rest.completed_at = null;
     }
 
-    const task = await updateTaskRow(supabase, user.id, id, rest);
-    await logActivity(supabase, user.id, "task.updated", "task", task.id, rest);
-    return ok(task);
+    return ok(await updateTaskRow(id, rest));
   } catch (error) {
     return fail(error);
   }
@@ -121,13 +82,8 @@ export async function updateTask(
 
 export async function deleteTask(id: string): Promise<ActionResult<Task>> {
   try {
-    ensureConfigured();
     if (!id) throw new ValidationError("Task id is required");
-    const supabase = await createClient();
-    const user = await requireAuthUser(supabase);
-    const task = await softDeleteTask(supabase, user.id, id);
-    await logActivity(supabase, user.id, "task.deleted", "task", task.id);
-    return ok(task);
+    return ok(await softDeleteTask(id));
   } catch (error) {
     return fail(error);
   }
@@ -135,12 +91,7 @@ export async function deleteTask(id: string): Promise<ActionResult<Task>> {
 
 export async function undoDeleteTask(id: string): Promise<ActionResult<Task>> {
   try {
-    ensureConfigured();
-    const supabase = await createClient();
-    const user = await requireAuthUser(supabase);
-    const task = await restoreTask(supabase, user.id, id);
-    await logActivity(supabase, user.id, "task.restored", "task", task.id);
-    return ok(task);
+    return ok(await restoreTask(id));
   } catch (error) {
     return fail(error);
   }
@@ -150,17 +101,14 @@ export async function toggleTaskComplete(
   id: string,
 ): Promise<ActionResult<Task>> {
   try {
-    ensureConfigured();
-    const supabase = await createClient();
-    const user = await requireAuthUser(supabase);
-    const current = await getTask(supabase, user.id, id);
+    const current = await getTask(id);
     const nextStatus = current.status === "done" ? "todo" : "done";
-    const task = await updateTaskRow(supabase, user.id, id, {
-      status: nextStatus,
-      completed_at:
-        nextStatus === "done" ? new Date().toISOString() : null,
-    });
-    return ok(task);
+    return ok(
+      await updateTaskRow(id, {
+        status: nextStatus,
+        completed_at: nextStatus === "done" ? new Date().toISOString() : null,
+      }),
+    );
   } catch (error) {
     return fail(error);
   }
@@ -168,18 +116,23 @@ export async function toggleTaskComplete(
 
 export async function duplicateTask(id: string): Promise<ActionResult<Task>> {
   try {
-    ensureConfigured();
-    const supabase = await createClient();
-    const user = await requireAuthUser(supabase);
-    const current = await getTask(supabase, user.id, id);
-    const task = await insertTask(supabase, user.id, {
-      ...current,
-      title: `${current.title} (copy)`,
-      status: "todo",
-      completed_at: null,
-      position: Date.now(),
-    });
-    return ok(task);
+    const current = await getTask(id);
+    return ok(
+      await insertTask({
+        title: `${current.title} (copy)`,
+        description: current.description,
+        status: "todo",
+        priority: current.priority,
+        category_id: current.category_id,
+        due_date: current.due_date,
+        start_time: null,
+        end_time: null,
+        estimated_minutes: current.estimated_minutes,
+        color: current.color,
+        notes: current.notes,
+        position: Date.now(),
+      }),
+    );
   } catch (error) {
     return fail(error);
   }

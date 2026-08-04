@@ -19,7 +19,6 @@ import {
   fetchNotes,
   updateNote,
 } from "@/features/knowledge/notes/actions";
-import { hasSupabaseEnvClient } from "@/lib/supabase/has-env-client";
 import { cn } from "@/lib/utils";
 
 type KnowledgeWorkspaceProps = {
@@ -29,13 +28,11 @@ type KnowledgeWorkspaceProps = {
 export function KnowledgeWorkspace({ noteId }: KnowledgeWorkspaceProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const configured = hasSupabaseEnvClient();
   const [folderId, setFolderId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
 
   const foldersQuery = useQuery({
     queryKey: ["folders"],
-    enabled: configured,
     queryFn: async () => {
       const result = await fetchFolders();
       if (!result.success) throw new Error(result.error.message);
@@ -45,7 +42,6 @@ export function KnowledgeWorkspace({ noteId }: KnowledgeWorkspaceProps) {
 
   const notesQuery = useQuery({
     queryKey: ["notes", folderId, search],
-    enabled: configured,
     queryFn: async () => {
       const result = await fetchNotes({ folderId, search });
       if (!result.success) throw new Error(result.error.message);
@@ -55,7 +51,7 @@ export function KnowledgeWorkspace({ noteId }: KnowledgeWorkspaceProps) {
 
   const noteQuery = useQuery({
     queryKey: ["note", noteId],
-    enabled: configured && Boolean(noteId),
+    enabled: Boolean(noteId),
     queryFn: async () => {
       const result = await fetchNote(noteId!);
       if (!result.success) throw new Error(result.error.message);
@@ -79,19 +75,6 @@ export function KnowledgeWorkspace({ noteId }: KnowledgeWorkspaceProps) {
     },
     onError: (error: Error) => toast.error(error.message),
   });
-
-  if (!configured) {
-    return (
-      <div className="text-muted-foreground space-y-2 text-sm">
-        <p>Connect Supabase to enable Knowledge Hub.</p>
-        <p>
-          Add env vars on Vercel, apply{" "}
-          <code>supabase/migrations/20260804120000_init_schema.sql</code>, then
-          sign up.
-        </p>
-      </div>
-    );
-  }
 
   return (
     <ResizablePanels

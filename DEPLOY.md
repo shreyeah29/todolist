@@ -1,39 +1,27 @@
-# Deploy & Supabase setup
+# Deploy (local-first)
 
-Production URL example: `https://todolist-gilt-pi.vercel.app`
+Toso currently runs **without Supabase**.
 
-## 1. Create a Supabase project
+All tasks, notes, folders, and settings are stored in the browser with **IndexedDB**.
 
-1. Create a project at [supabase.com](https://supabase.com)
-2. Open **SQL Editor**
-3. Paste and run `supabase/migrations/20260804120000_init_schema.sql`
+## Vercel
 
-## 2. Auth redirect URLs
+1. Deploy the GitHub repo as usual
+2. No environment variables are required
+3. Open the site and use Planner / Knowledge Hub immediately
 
-In Supabase → Authentication → URL configuration:
+Production example: `https://todolist-gilt-pi.vercel.app`
 
-- Site URL: `https://todolist-gilt-pi.vercel.app`
-- Redirect URLs: 
-  - `https://todolist-gilt-pi.vercel.app/callback`
-  - `http://localhost:3000/callback`
+## Notes
 
-## 3. Vercel environment variables
+- Data is per-browser / per-device
+- Clearing site data deletes the workspace
+- Use Settings → Reset local data to wipe and reseed default folders
+- Cloud sync (Supabase) can be added later without changing the product UI
 
-Project → Settings → Environment Variables:
-
-```
-NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=YOUR_ANON_KEY
-SUPABASE_SERVICE_ROLE_KEY=YOUR_SERVICE_ROLE_KEY
-NEXT_PUBLIC_APP_URL=https://todolist-gilt-pi.vercel.app
-```
-
-Then **Redeploy**.
-
-## 4. Local
+## Local development
 
 ```bash
-cp .env.example .env.local
-# fill values
+npm install
 npm run dev
 ```

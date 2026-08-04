@@ -2,7 +2,8 @@
 
 > Personal Productivity Operating System  
 > Modules: **Planner** · **Knowledge Hub**  
-> Status: **Step 3 — UI design system + app shell** (awaiting approval before Step 4)
+> Status: **Local-first mode** — IndexedDB (Dexie), no Supabase required
+
 
 ---
 
